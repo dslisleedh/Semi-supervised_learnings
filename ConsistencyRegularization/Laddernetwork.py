@@ -56,10 +56,80 @@ class Encoder(tf.keras.layers.Layer):
 
 
 class Decoderlayer(tf.keras.layers.Layer):
-    def __init__(self):
+    def __init__(self, n_nodes):
+        self.n_nodes = n_nodes
+
+        self.V = tf.keras.layers.Dense(self.n_nodes,
+                                       activation = 'relu'
+                                       )
+        self.BN = tf.keras.layers.BatchNormalization()
+
+    def call(self, X):
+        u = self.BN(self.V(X))
+        return u
 
 
 class Decoder(tf.keras.layers.Layer):
     def __init__(self, n_layers, n_nodes):
         super(Decoder, self).__init__()
+        self.n_layers = n_layers
+        self.n_nodes = n_nodes
+
+        self.D = [
+            tf.keras.layers.BatchNormalization()
+        ] + [
+            Decoderlayer(self.n_nodes) for _ in range(self.n_layers)
+        ]
+
+    def call(self, h):
+        u_ = []
+        u = self.D[0](h)
+        u_.append(u)
+        for d in self.D[1:]:
+            u = d(u)
+            u_.append(u)
+        return u_
+
+
+class G_gauss(tf.keras.layers.Layer):
+    def __init__(self, n_nodes):
+        super(G_gauss, self).__init__()
+        self.n_nodes = n_nodes
+
+        self.a1 = tf.Variable(initial_value=tf.zeros(self.n_nodes), trainable=True, dtype='float32')
+        self.a2 = tf.Variable(initial_value=tf.ones(self.n_nodes), trainable=True, dtype='float32')
+        self.a3 = tf.Variable(initial_value=tf.zeros(self.n_nodes), trainable=True, dtype='float32')
+        self.a4 = tf.Variable(initial_value=tf.zeros(self.n_nodes), trainable=True, dtype='float32')
+        self.a5 = tf.Variable(initial_value=tf.zeros(self.n_nodes), trainable=True, dtype='float32')
+        self.a6 = tf.Variable(initial_value=tf.zeros(self.n_nodes), trainable=True, dtype='float32')
+        self.a7 = tf.Variable(initial_value=tf.ones(self.n_nodes), trainable=True, dtype='float32')
+        self.a8 = tf.Variable(initial_value=tf.zeros(self.n_nodes), trainable=True, dtype='float32')
+        self.a9 = tf.Variable(initial_value=tf.zeros(self.n_nodes), trainable=True, dtype='float32')
+        self.a10 = tf.Variable(initial_value=tf.zeros(self.n_nodes), trainable=True, dtype='float32')
+
+    def call(self, u):
+        mu = self.a1 * tf.nn.sigmoid(self.a2 * u + self.a3) + self.a4 * u + self.a5
+        v = self.a6 * tf.nn.sigmoid(self.a7 * u + self.a8) + self.a9 * u + self.a10
+        return mu, v
+
+class Laddernetwork(tf.keras.models.Model):
+    def __init__(self, n_layers, n_nodes, n_labels, last_activation):
+        super(Laddernetwork, self).__init__()
+        self.n_layers = n_layers
+        self.n_nodes = n_nodes
+        self.n_labels = n_labels,
+        self.last_activation = last_activation
+
+        self.Encoder = Encoder(self.n_layers,
+                               self.n_nodes,
+                               self.n_labels,
+                               last_activation = self.last_activation
+                               )
+        self.Decoder = Decoder(self.n_layers
+                               self.n_nodes
+                               )
+
+
+    @tf.function
+    def g()
 
